@@ -1,26 +1,14 @@
-
-from flask import Flask, request, jsonify
+import socketserver
 import datetime
 
-app = Flask(__name__)
+class GPSHandler(socketserver.BaseRequestHandler):
+    def handle(self):
+        data = self.request.recv(1024).strip()
+        timestamp = datetime.datetime.now().isoformat()
+        print(f"[{timestamp}] Pacote recebido de {self.client_address[0]}: {data.decode()}")
 
-@app.route('/')
-def index():
-    return 'GPS Server Running'
-
-@app.route('/api/gps', methods=['POST'])
-def receive_gps_data():
-    try:
-        data = request.get_json()
-        device_id = data.get('device_id')
-        latitude = data.get('latitude')
-        longitude = data.get('longitude')
-        timestamp = data.get('timestamp', datetime.datetime.now().isoformat())
-        # Aqui você poderia salvar no banco de dados se quiser
-        print(f"[{timestamp}] Device {device_id} - Lat: {latitude}, Lon: {longitude}")
-        return jsonify({'status': 'success'}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+if __name__ == "__main__":
+    HOST, PORT = "0.0.0.0", 5000
+    with socketserver.TCPServer((HOST, PORT), GPSHandler) as server:
+        print(f"Servidor TCP rodando em {HOST}:{PORT}")
+        server.serve_forever()
